@@ -1,0 +1,188 @@
+import 'package:fancy_shimmer_image/fancy_shimmer_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:grocery_app/inner_screens/products_details.dart';
+import 'package:grocery_app/models/cart_model.dart';
+import 'package:grocery_app/models/product_models.dart';
+import 'package:grocery_app/providers/cart_provider.dart';
+import 'package:grocery_app/providers/wishlist_provider.dart';
+import 'package:grocery_app/services/global_methods.dart';
+import 'package:grocery_app/services/utils.dart';
+import 'package:grocery_app/widgets/heart_btn.dart';
+import 'package:grocery_app/widgets/price_widget.dart';
+import 'package:grocery_app/widgets/text_widgets.dart';
+import 'package:provider/provider.dart';
+
+class FeedWidgets extends StatefulWidget {
+  FeedWidgets({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<FeedWidgets> createState() => _FeedWidgetsState();
+}
+
+class _FeedWidgetsState extends State<FeedWidgets> {
+  final _quantityTextController = TextEditingController();
+
+  @override
+  void initState() {
+    _quantityTextController.text = '1';
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _quantityTextController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Size size = Utils(context).getScreenSize;
+    final Color color = Utils(context).color;
+
+    final productModel = Provider.of<ProductModel>(context);
+    final cartProvider = Provider.of<CartProvider>(context);
+
+    bool? _isInCart = cartProvider.getCartItems.containsKey(productModel.id);
+
+    final wishlistProvider = Provider.of<WishlistProvider>(context);
+    bool? _isInWishList =
+        wishlistProvider.getWishlistItems.containsKey(productModel.id);
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Material(
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).cardColor,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(context, ProductDetails.routeName,
+                arguments: productModel.id);
+            // GlobalMethods.navigateTo(
+            //     ctx: context, routeName: ProductDetails.routeName);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: [
+              FancyShimmerImage(
+                  imageUrl: productModel.imageUrl,
+                  height: size.width * 0.22,
+                  width: size.width * 0.22,
+                  boxFit: BoxFit.fill),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      flex: 3,
+                      child: TextWidget(
+                        text: productModel.title,
+                        color: color,
+                        maxLines: 1,
+                        textSize: 20,
+                        isTitle: true,
+                      ),
+                    ),
+                    Flexible(
+                        flex: 1,
+                        child: HeartBTN(
+                          productId: productModel.id,
+                          isInWishlist: _isInWishList,
+                        )),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      flex: 3,
+                      child: PriceWidget(
+                        salePrice: productModel.salePrice,
+                        price: productModel.price,
+                        textPrice: _quantityTextController.text,
+                        isOnSale: true,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    Flexible(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            flex: 6,
+                            child: FittedBox(
+                              child: TextWidget(
+                                text: productModel.isPiece ? "Piece" : "KG",
+                                color: color,
+                                textSize: 20,
+                                isTitle: true,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 5,
+                          ),
+                          Flexible(
+                              flex: 2,
+                              child: TextFormField(
+                                controller: _quantityTextController,
+                                key: const ValueKey('10'),
+                                style: TextStyle(color: color, fontSize: 18),
+                                keyboardType: TextInputType.number,
+                                maxLines: 1,
+                                enabled: true,
+                                onChanged: (value) {
+                                  setState(() {});
+                                },
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp('[0-9,]'))
+                                ],
+                              ))
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: _isInCart
+                      ? null
+                      : () {
+                          cartProvider.addProductsToCart(
+                              productId: productModel.id,
+                              quantity:
+                                  int.parse(_quantityTextController.text));
+                        },
+                  child: TextWidget(
+                      text: _isInCart ? 'In Cart' : 'Add to cart',
+                      color: color,
+                      textSize: 20),
+                  style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(
+                          Theme.of(context).cardColor),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                          const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      )))),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
